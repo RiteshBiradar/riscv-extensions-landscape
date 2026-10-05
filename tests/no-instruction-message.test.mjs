@@ -33,6 +33,10 @@ test('VLEN parameter extensions get a VLEN-specific message', () => {
   const reason = noInstructionReason(zvl128b);
   assert.ok(reason, 'should return a non-empty string');
   assert.ok(reason.includes('VLEN'), `message should mention VLEN, got: ${reason}`);
+  assert.ok(
+    reason.includes('currently available in this catalogue'),
+    `message should be catalogue-scoped, got: ${reason}`,
+  );
 });
 
 test('behavioral extensions get a behavior message', () => {
@@ -44,6 +48,10 @@ test('behavioral extensions get a behavior message', () => {
   assert.ok(
     reason.includes('behavioral'),
     `message should mention behavioral rules, got: ${reason}`,
+  );
+  assert.ok(
+    reason.includes('currently available in this catalogue'),
+    `message should be catalogue-scoped, got: ${reason}`,
   );
 });
 
@@ -57,6 +65,10 @@ test('CSR-only extensions get a CSR-focused message', () => {
   assert.ok(
     reason.includes('control/status register'),
     `message should mention CSRs, got: ${reason}`,
+  );
+  assert.ok(
+    reason.includes('currently available in this catalogue'),
+    `message should be catalogue-scoped, got: ${reason}`,
   );
 });
 
@@ -73,6 +85,7 @@ test('extensions with both CSRs and behavior get a combined message', () => {
     const synthetic = { id: 'Xtest', instructions: {}, csrs: { mstatus: {} }, behavior: 'test' };
     const reason = noInstructionReason(synthetic);
     assert.ok(reason.includes('control/status') && reason.includes('behavioral'));
+    assert.ok(reason.includes('currently available in this catalogue'));
     return;
   }
   const reason = noInstructionReason(both);
@@ -80,6 +93,10 @@ test('extensions with both CSRs and behavior get a combined message', () => {
   assert.ok(
     reason.includes('control/status') && reason.includes('behavioral'),
     `message should mention both CSRs and behavioral rules, got: ${reason}`,
+  );
+  assert.ok(
+    reason.includes('currently available in this catalogue'),
+    `message should be catalogue-scoped, got: ${reason}`,
   );
 });
 
@@ -91,9 +108,33 @@ test('generic fallback for extensions with no distinguishing signals', () => {
   assert.equal(Object.keys(zkt.csrs || {}).length, 0, 'Zkt should have no CSRs');
   const reason = noInstructionReason(zkt);
   assert.ok(reason, 'should return a non-empty string');
+  assert.equal(
+    reason,
+    'No instruction encodings are currently available in this catalogue.',
+  );
   assert.ok(
-    reason.includes('no instruction encodings'),
-    `generic message should mention no instruction encodings, got: ${reason}`,
+    !reason.includes('This extension defines no instruction encodings'),
+    'generic message must not claim extension itself defines no instructions',
+  );
+});
+
+test('RV128I regression: empty instructions map gets catalogue-scoped explanation', () => {
+  const rv128i = allExtensions.find((e) => e.id === 'RV128I');
+  assert.ok(rv128i, 'RV128I must exist in catalog');
+  assert.equal(
+    Object.keys(rv128i.instructions || {}).length,
+    0,
+    'RV128I instruction map must be empty in catalogue',
+  );
+  const reason = noInstructionReason(rv128i);
+  assert.ok(reason, 'should return a non-empty string');
+  assert.ok(
+    reason.includes('currently available in this catalogue'),
+    `message should be catalogue-scoped, got: ${reason}`,
+  );
+  assert.ok(
+    !reason.includes('This extension defines no instruction encodings'),
+    `message must not claim the extension defines no instructions, got: ${reason}`,
   );
 });
 
@@ -113,13 +154,31 @@ test('every zero-instruction extension produces a non-empty message', () => {
   assert.ok(empty.length > 100, `expected 100+ zero-instruction extensions, got ${empty.length}`);
 
   const failures = [];
+  const uncatalogueScoped = [];
+  const overlyBroadClaims = [];
   for (const ext of empty) {
     const reason = noInstructionReason(ext);
     if (!reason || typeof reason !== 'string' || reason.trim().length === 0) {
       failures.push(ext.id);
     }
+    if (reason && !reason.includes('currently available in this catalogue')) {
+      uncatalogueScoped.push(ext.id);
+    }
+    if (reason && reason.includes('This extension defines no instruction encodings')) {
+      overlyBroadClaims.push(ext.id);
+    }
   }
   assert.deepEqual(failures, [], `these zero-instruction extensions got no message: ${failures}`);
+  assert.deepEqual(
+    uncatalogueScoped,
+    [],
+    `these zero-instruction extensions lack catalogue-scoped wording: ${uncatalogueScoped}`,
+  );
+  assert.deepEqual(
+    overlyBroadClaims,
+    [],
+    `these zero-instruction extensions contain overly broad claims: ${overlyBroadClaims}`,
+  );
 });
 
 test('no false positives: extensions with instructions return null', () => {

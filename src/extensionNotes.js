@@ -1,5 +1,5 @@
 /**
- * Explains why an extension defines no instruction encodings.
+ * Explains when an extension has no instruction encodings in the catalogue.
  *
  * Returns a short explanatory string when the extension's `instructions` map
  * is empty, or null when it has instructions (so the caller can render the
@@ -7,33 +7,35 @@
  *
  * The explanation is derived from fields the catalogue already carries —
  * `csrs`, `behavior`, and the extension id — so nothing new needs to be
- * maintained. Around 122 of the 223 catalogue entries define no instruction
- * encodings: umbrellas, VLEN parameters, behavioural guarantees, CSR-only
- * extensions, and PMA/memory-ordering rules. Silence in the detail panel
- * reads as absent data; a short note reads as a deliberate design.
+ * maintained. Around 122 of the 223 catalogue entries have no instruction
+ * encodings mapped: umbrellas, VLEN parameters, behavioural guarantees, CSR-only
+ * extensions, and draft or unmodeled sets (such as RV128I). Silence in the detail
+ * panel reads as absent data; a short note clarifies that no instruction encodings
+ * are currently available in this catalogue, noting known characteristics where
+ * catalogue metadata provides them.
  *
  * Pure — takes the catalogue entry, returns a string. No React, no data
  * import. Callers pass the entry.
  */
 export function noInstructionReason(ext) {
-  if (Object.keys(ext.instructions || {}).length > 0) return null;
+  if (!ext || Object.keys(ext.instructions || {}).length > 0) return null;
 
   const csrCount = Object.keys(ext.csrs || {}).length;
   const hasBehavior = Boolean(ext.behavior);
   const isVlenParam = /^Zvl\d+b$/.test(ext.id);
 
   if (isVlenParam) {
-    return 'Sets a minimum vector register length (VLEN parameter) — not an instruction set.';
+    return 'No instruction encodings are currently available in this catalogue; this is a VLEN parameter extension.';
   }
   if (csrCount > 0 && hasBehavior) {
-    return 'Defines control/status registers and behavioral rules, not instruction encodings.';
+    return 'No instruction encodings are currently available in this catalogue; this extension defines control/status registers and behavioral rules.';
   }
   if (hasBehavior) {
-    return 'Defines behavioral rules, not instruction encodings.';
+    return 'No instruction encodings are currently available in this catalogue; this extension defines behavioral rules.';
   }
   if (csrCount > 0) {
     const s = csrCount === 1 ? '' : 's';
-    return `Defines ${csrCount} control/status register${s}, not instruction encodings.`;
+    return `No instruction encodings are currently available in this catalogue; this extension defines ${csrCount} control/status register${s}.`;
   }
-  return 'This extension defines no instruction encodings.';
+  return 'No instruction encodings are currently available in this catalogue.';
 }
