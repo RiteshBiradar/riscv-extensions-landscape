@@ -4422,7 +4422,7 @@ const RISCVExplorer = () => {
                             className="text-[11px] uppercase tracking-wider font-bold mb-1.5 flex items-center gap-1"
                             style={{ color: 'var(--riscv-text-3)' }}
                           >
-                            <Info size={10} /> Instruction Encodings
+                            <Info size={10} /> Instruction Set Snapshot
                           </h4>
                           <p
                             className="text-sm leading-relaxed"
@@ -4430,6 +4430,17 @@ const RISCVExplorer = () => {
                           >
                             {noInstructionReason(selectedExt)}
                           </p>
+                          {typeof selectedExt.behavior === 'string' &&
+                            selectedExt.behavior.trim().length > 0 &&
+                            selectedExt.behavior.trim() !== selectedExt.desc?.trim() &&
+                            selectedExt.behavior.trim() !== selectedExt.use?.trim() && (
+                              <p
+                                className="text-xs leading-relaxed mt-2 whitespace-pre-line"
+                                style={{ color: 'var(--riscv-text-2)' }}
+                              >
+                                {selectedExt.behavior}
+                              </p>
+                            )}
                         </div>
                       )}
 

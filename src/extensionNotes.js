@@ -7,10 +7,10 @@
  *
  * The explanation is derived from fields the catalogue already carries —
  * `csrs`, `behavior`, and the extension id — so nothing new needs to be
- * maintained. Around 122 of the 223 catalogue entries have no instruction
- * encodings mapped: umbrellas, VLEN parameters, behavioural guarantees, CSR-only
- * extensions, and draft or unmodeled sets (such as RV128I). Silence in the detail
- * panel reads as absent data; a short note clarifies that no instruction encodings
+ * maintained. Catalogue entries without instruction encodings mapped include:
+ * umbrellas, VLEN parameters, behavioural guarantees, CSR-only extensions,
+ * and draft or unmodeled sets (such as RV128I). Silence in the detail panel
+ * reads as absent data; a short note clarifies that no instruction encodings
  * are currently available in this catalogue, noting known characteristics where
  * catalogue metadata provides them.
  *
@@ -28,14 +28,14 @@ export function noInstructionReason(ext) {
     return 'No instruction encodings are currently available in this catalogue; this is a VLEN parameter extension.';
   }
   if (csrCount > 0 && hasBehavior) {
-    return 'No instruction encodings are currently available in this catalogue; this extension defines control/status registers and behavioral rules.';
+    return 'No instruction encodings are currently available in this catalogue; this extension touches control/status registers.';
   }
   if (hasBehavior) {
-    return 'No instruction encodings are currently available in this catalogue; this extension defines behavioral rules.';
+    return 'No instruction encodings are currently available in this catalogue; a behavior description is available below.';
   }
   if (csrCount > 0) {
     const s = csrCount === 1 ? '' : 's';
-    return `No instruction encodings are currently available in this catalogue; this extension defines ${csrCount} control/status register${s}.`;
+    return `No instruction encodings are currently available in this catalogue; this extension touches ${csrCount} control/status register${s} (listed below).`;
   }
   return 'No instruction encodings are currently available in this catalogue.';
 }

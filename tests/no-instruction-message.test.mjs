@@ -46,13 +46,27 @@ test('behavioral extensions get a behavior message', () => {
   const reason = noInstructionReason(sv39);
   assert.ok(reason, 'should return a non-empty string');
   assert.ok(
-    reason.includes('behavioral'),
-    `message should mention behavioral rules, got: ${reason}`,
+    reason.includes('a behavior description is available below'),
+    `message should mention that a behavior description is available below, got: ${reason}`,
   );
   assert.ok(
     reason.includes('currently available in this catalogue'),
     `message should be catalogue-scoped, got: ${reason}`,
   );
+});
+
+test('behavioral extensions have non-empty behavior descriptions', () => {
+  const sv39 = allExtensions.find((e) => e.id === 'Sv39');
+  assert.ok(sv39.behavior, 'Sv39 must have a behavior field');
+  assert.equal(typeof sv39.behavior, 'string');
+  assert.equal(sv39.behavior, '39-bit virtual address translation (3 level)');
+
+  const behavioralExts = allExtensions.filter((e) => Boolean(e.behavior));
+  assert.ok(behavioralExts.length > 0, 'expected behavioral extensions in catalogue');
+  for (const ext of behavioralExts) {
+    assert.equal(typeof ext.behavior, 'string');
+    assert.ok(ext.behavior.trim().length > 0, `${ext.id} must have non-empty behavior`);
+  }
 });
 
 test('CSR-only extensions get a CSR-focused message', () => {
@@ -70,6 +84,59 @@ test('CSR-only extensions get a CSR-focused message', () => {
     reason.includes('currently available in this catalogue'),
     `message should be catalogue-scoped, got: ${reason}`,
   );
+  assert.ok(
+    reason.includes('touches 2 control/status registers (listed below)'),
+    `message should use accurate touches wording, got: ${reason}`,
+  );
+  assert.ok(
+    !reason.includes('defines'),
+    `message should not claim extension defines registers, got: ${reason}`,
+  );
+});
+
+test('Svpbmt, Svadu and Sstc do not claim to define registers', () => {
+  for (const id of ['Svpbmt', 'Svadu', 'Sstc']) {
+    const ext = allExtensions.find((e) => e.id === id);
+    assert.ok(ext, `${id} must exist in catalog`);
+    const count = Object.keys(ext.csrs || {}).length;
+    assert.ok(count > 0, `${id} must have CSRs`);
+    const reason = noInstructionReason(ext);
+    assert.ok(reason, `${id} should return a non-empty string`);
+    assert.ok(
+      !reason.includes('defines'),
+      `${id} must not claim to define registers, got: ${reason}`,
+    );
+    assert.ok(
+      reason.includes(`touches ${count} control/status register`),
+      `${id} should use touches wording with accurate count, got: ${reason}`,
+    );
+    assert.ok(
+      reason.includes('(listed below)'),
+      `${id} should note registers are listed below, got: ${reason}`,
+    );
+    assert.ok(
+      reason.includes('currently available in this catalogue'),
+      `${id} should use catalogue-scoped wording, got: ${reason}`,
+    );
+  }
+});
+
+test('CSR message uses singular form when exactly 1 CSR is touched', () => {
+  const single = { id: 'Xsingle', instructions: {}, csrs: { my_csr: {} } };
+  const reason = noInstructionReason(single);
+  assert.equal(
+    reason,
+    'No instruction encodings are currently available in this catalogue; this extension touches 1 control/status register (listed below).',
+  );
+});
+
+test('CSR message uses plural form when multiple CSRs are touched', () => {
+  const multi = { id: 'Xmulti', instructions: {}, csrs: { csr1: {}, csr2: {}, csr3: {} } };
+  const reason = noInstructionReason(multi);
+  assert.equal(
+    reason,
+    'No instruction encodings are currently available in this catalogue; this extension touches 3 control/status registers (listed below).',
+  );
 });
 
 test('extensions with both CSRs and behavior get a combined message', () => {
@@ -84,15 +151,21 @@ test('extensions with both CSRs and behavior get a combined message', () => {
     // If no such extension currently exists, test with a synthetic entry.
     const synthetic = { id: 'Xtest', instructions: {}, csrs: { mstatus: {} }, behavior: 'test' };
     const reason = noInstructionReason(synthetic);
-    assert.ok(reason.includes('control/status') && reason.includes('behavioral'));
-    assert.ok(reason.includes('currently available in this catalogue'));
+    assert.ok(
+      reason.includes('control/status registers'),
+      `message should mention control/status registers, got: ${reason}`,
+    );
+    assert.ok(
+      reason.includes('currently available in this catalogue'),
+      `message should be catalogue-scoped, got: ${reason}`,
+    );
     return;
   }
   const reason = noInstructionReason(both);
   assert.ok(reason, 'should return a non-empty string');
   assert.ok(
-    reason.includes('control/status') && reason.includes('behavioral'),
-    `message should mention both CSRs and behavioral rules, got: ${reason}`,
+    reason.includes('control/status registers'),
+    `message should mention control/status registers, got: ${reason}`,
   );
   assert.ok(
     reason.includes('currently available in this catalogue'),
@@ -164,7 +237,11 @@ test('every zero-instruction extension produces a non-empty message', () => {
     if (reason && !reason.includes('currently available in this catalogue')) {
       uncatalogueScoped.push(ext.id);
     }
-    if (reason && reason.includes('This extension defines no instruction encodings')) {
+    if (
+      reason &&
+      (reason.includes('This extension defines no instruction encodings') ||
+        /defines \d+ control\/status register/.test(reason))
+    ) {
       overlyBroadClaims.push(ext.id);
     }
   }
