@@ -55,6 +55,7 @@ import EncodingDiagram from './EncodingDiagram.jsx';
 import InstructionUsage from './InstructionUsage.jsx';
 import DetailSection from './DetailSection.jsx';
 import { specificationLink } from './specLink.js';
+import { noInstructionReason } from './extensionNotes.js';
 import { ExtensionToolchains } from './ToolchainSupport.jsx';
 import CsrDetails, { CsrChipList } from './CsrDetails.jsx';
 import { focusableWithin, nextFocus } from './focusTrap.js';
