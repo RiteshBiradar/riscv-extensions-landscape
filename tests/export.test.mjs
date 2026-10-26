@@ -196,7 +196,7 @@ const section = (yaml, key) => {
   const items = [];
   for (let i = start + 1; i < lines.length; i++) {
     if (/^[A-Za-z_]/.test(lines[i])) break; // next top-level key ends the block
-    const m = /^ {2}- (\S+)$/.exec(lines[i]);
+    const m = /^ {2}- (?:\{ name: )?(\S+?)(?:,.*|\})?$/.exec(lines[i]);
     if (m) items.push(m[1]);
   }
   return items;
@@ -440,5 +440,33 @@ test('unrecognised single-letter extensions sort after recognised ones in riscv-
   // prevents an unrecognised single-letter extension from sorting ahead of standard letters (#311).
   const { yaml } = buildIsaConfigYaml(['RV64I', 'M', 'C', 'X'], ALL, { format: 'riscv-config' });
   const isa = yaml.match(/^ {2}ISA: (\S+)/m)[1];
-  assert.match(isa, /^RV64IMCX/, `standard extensions must lead before unrecognised single letters: ${isa}`);
+  assert.match(
+    isa,
+    /^RV64IMCX/,
+    `standard extensions must lead before unrecognised single letters: ${isa}`,
+  );
+});
+
+test('landscape and UDB exports do not duplicate privileged extensions', () => {
+  for (const sel of [['RV64I', 'Smdbltrp', 'Sdext'], RVA23]) {
+    const { yaml: landYaml } = buildIsaConfigYaml(sel, ALL);
+    const landExts = section(landYaml, 'extensions');
+    assert.ok(landExts, 'landscape export must carry extensions block');
+    const landDupes = landExts.filter((item, index) => landExts.indexOf(item) !== index);
+    assert.deepEqual(
+      landDupes,
+      [],
+      `landscape extensions block must not contain duplicates: ${landDupes.join(', ')}`,
+    );
+
+    const { yaml: udbYaml } = buildIsaConfigYaml(sel, ALL, { format: 'udb' });
+    const udbExts = section(udbYaml, 'implemented_extensions');
+    assert.ok(udbExts, 'UDB export must carry implemented_extensions block');
+    const udbDupes = udbExts.filter((item, index) => udbExts.indexOf(item) !== index);
+    assert.deepEqual(
+      udbDupes,
+      [],
+      `UDB implemented_extensions block must not contain duplicates: ${udbDupes.join(', ')}`,
+    );
+  }
 });

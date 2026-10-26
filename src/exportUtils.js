@@ -151,7 +151,6 @@ export function buildIsaConfigYaml(selectedIds, allExts, options = {}) {
   const singleLetters = [];
   const zExts = [];
   const privExts = [];
-  const allExtTokens = []; // ordered list for the extensions: block
 
   let hasZicsrOrZifencei = false;
   let hasSupervisor = false;
@@ -172,7 +171,6 @@ export function buildIsaConfigYaml(selectedIds, allExts, options = {}) {
       // that march carried, while the comment beside it claimed it held them
       // all. Two fields describing one configuration must not disagree.
       privExts.push(id);
-      allExtTokens.push(id);
       zExts.push(id.charAt(0).toUpperCase() + id.slice(1).toLowerCase());
       continue;
     }
@@ -187,11 +185,9 @@ export function buildIsaConfigYaml(selectedIds, allExts, options = {}) {
         continue;
       }
       singleLetters.push(idUpper);
-      allExtTokens.push(idUpper);
     } else {
       const formatted = id.charAt(0).toUpperCase() + id.slice(1).toLowerCase();
       zExts.push(formatted);
-      allExtTokens.push(formatted);
     }
   }
 
@@ -231,7 +227,7 @@ export function buildIsaConfigYaml(selectedIds, allExts, options = {}) {
   const marchString = marchRes.march || 'none';
 
   // 8. Build all extensions list for YAML
-  const allExtsList = [baseInfo.id, ...filteredSingles, ...zExts, ...privExts];
+  const allExtsList = [baseInfo.id, ...filteredSingles, ...zExts];
   const unverifiedGraphIds = [...new Set(selectedIds)]
     .filter((id) => !BASE_ISA_IDS.has(id) && DEPENDENCY_GRAPH.nodes?.[id]?.verified === 'none')
     .sort();
