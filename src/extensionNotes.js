@@ -14,28 +14,43 @@
  * are currently available in this catalogue, noting known characteristics where
  * catalogue metadata provides them.
  *
+ * Ratified extensions get definitive wording ("This extension adds no
+ * instructions; …") because the spec is final and their instruction set is
+ * known. Draft, development, frozen, and unclassified extensions get hedged
+ * wording ("No instruction encodings are listed for this extension yet.")
+ * because the catalogue may simply not have mapped them yet.
+ *
  * Pure — takes the catalogue entry, returns a string. No React, no data
  * import. Callers pass the entry.
  */
 export function noInstructionReason(ext) {
   if (!ext || Object.keys(ext.instructions || {}).length > 0) return null;
 
+  const isRatified = ext.state === 'ratified';
+
+  if (!isRatified) {
+    return 'No instruction encodings are listed for this extension yet.';
+  }
+
+  // ── Ratified: definitive wording ──────────────────────────────────────────
+
   const csrCount = Object.keys(ext.csrs || {}).length;
-  const hasBehavior = Boolean(ext.behavior);
+  const hasBehavior = typeof ext.behavior === 'string' && ext.behavior.trim().length > 0;
   const isVlenParam = /^Zvl\d+b$/.test(ext.id);
 
   if (isVlenParam) {
-    return 'No instruction encodings are currently available in this catalogue; this is a VLEN parameter extension.';
+    return 'This extension adds no instructions; it defines a vector length (VLEN) parameter.';
   }
   if (csrCount > 0 && hasBehavior) {
-    return 'No instruction encodings are currently available in this catalogue; this extension touches control/status registers.';
-  }
-  if (hasBehavior) {
-    return 'No instruction encodings are currently available in this catalogue; a behavior description is available below.';
+    const s = csrCount === 1 ? '' : 's';
+    return `This extension adds no instructions; it touches ${csrCount} control/status register${s} (listed below) and its behavior is described below.`;
   }
   if (csrCount > 0) {
     const s = csrCount === 1 ? '' : 's';
-    return `No instruction encodings are currently available in this catalogue; this extension touches ${csrCount} control/status register${s} (listed below).`;
+    return `This extension adds no instructions; it touches ${csrCount} control/status register${s} (listed below).`;
   }
-  return 'No instruction encodings are currently available in this catalogue.';
+  if (hasBehavior) {
+    return 'This extension adds no instructions; its behavior is described below.';
+  }
+  return 'This extension adds no instructions.';
 }
