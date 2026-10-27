@@ -4691,6 +4691,42 @@ const RISCVExplorer = () => {
                           </div>
                         )}
 
+                      {Object.keys(selectedExt.instructions || {}).length === 0 &&
+                        noInstructionReason(selectedExt) && (
+                          <div className="bg-slate-900 p-3 rounded-sm border border-slate-700">
+                            <h3
+                              className="text-[11px] uppercase tracking-wider font-bold mb-1.5 flex items-center gap-1"
+                              style={{ color: 'var(--riscv-text-3)' }}
+                            >
+                              <Info size={10} /> Instruction Set Snapshot
+                            </h3>
+                            <p
+                              className="text-sm leading-relaxed"
+                              style={{ color: 'var(--riscv-text-2)' }}
+                            >
+                              {noInstructionReason(selectedExt)}
+                            </p>
+                            {typeof selectedExt.behavior === 'string' &&
+                              selectedExt.behavior.trim().length > 0 &&
+                              selectedExt.behavior.trim() !== selectedExt.desc?.trim() &&
+                              selectedExt.behavior.trim() !== selectedExt.use?.trim() &&
+                              (() => {
+                                const text = selectedExt.behavior
+                                  .replace(/\n?\[NOTE\]\n?={4,}\n[\s\S]*?={4,}/g, '')
+                                  .replace(/\n?\[NOTE\]\n(?:(?!\n\n)[\s\S])*(\n\n|$)/g, '$1')
+                                  .trim();
+                                return text.length > 0 ? (
+                                  <p
+                                    className="text-xs leading-relaxed mt-2 whitespace-pre-line"
+                                    style={{ color: 'var(--riscv-text-2)' }}
+                                  >
+                                    {text}
+                                  </p>
+                                ) : null;
+                              })()}
+                          </div>
+                        )}
+
                       {Object.keys(selectedExt.instructions || {}).length > 0 && (
                         <div className="bg-slate-900 p-3 rounded-sm border border-slate-700">
                           <h3 className="text-[11px] uppercase tracking-wider text-emerald-400 font-bold mb-2">
