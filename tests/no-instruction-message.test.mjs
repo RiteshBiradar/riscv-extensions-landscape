@@ -41,8 +41,9 @@ test('cleanBehaviorText returns text unchanged when no NOTE marker is present', 
 });
 
 test('cleanBehaviorText removes block-style NOTE delimited by equal signs', () => {
-  const text = 'Main text here.\n[NOTE]\n====\nThis is a note.\nMore note content.\n====\nText after note.';
-  const expected = 'Main text here.\nText after note.';
+  const text =
+    'Main text here.\n[NOTE]\n====\nThis is a note.\nMore note content.\n====\nText after note.';
+  const expected = 'Main text here. Text after note.';
   assert.equal(cleanBehaviorText(text), expected);
 });
 
@@ -67,6 +68,51 @@ test('cleanBehaviorText removes NOTE content up to paragraph break, preserving t
 test('cleanBehaviorText trims whitespace from result', () => {
   const text = '  \n  Main text.  \n[NOTE]\nNote content.\n\n  ';
   assert.equal(cleanBehaviorText(text), 'Main text.');
+});
+
+test('cleanBehaviorText joins source line wraps and keeps paragraph breaks', () => {
+  // UDB wraps its AsciiDoc at about 80 columns (Svbare: "must\nbe supported").
+  const text =
+    'This extension mandates that the satp mode Bare must\nbe supported.\n\nSecond\n  paragraph.';
+  assert.equal(
+    cleanBehaviorText(text),
+    'This extension mandates that the satp mode Bare must be supported.\n\nSecond paragraph.',
+  );
+});
+
+test('cleanBehaviorText reduces inline formatting and list markers to text', () => {
+  assert.equal(
+    cleanBehaviorText('`stvec.MODE` must hold 0, and hardware does *not* update **A/D**.'),
+    'stvec.MODE must hold 0, and hardware does not update A/D.',
+  );
+  assert.equal(
+    cleanBehaviorText(
+      '*Sha* comprises:\n\n** *H* The hypervisor extension.\n\n** *Ssstateen* The\n   state-enable view.',
+    ),
+    'Sha comprises:\n\n• H The hypervisor extension.\n\n• Ssstateen The state-enable view.',
+  );
+});
+
+test('every behavior text the panel shows reads as prose', () => {
+  // The panel shows cleanBehaviorText for zero-instruction extensions, and the
+  // message promises it ("its behavior is described below").
+  const leftovers = [];
+  const missing = [];
+  for (const ext of allExtensions) {
+    const reason = noInstructionReason(ext);
+    if (!reason) continue;
+    const text = cleanBehaviorText(ext.behavior);
+    // A bare * is arithmetic (Sstvecv: "stvec.BASE + 4 * cause"), not markup.
+    if (/`|\*[^\s*][^*]*\*|(^|[^\n])\n(?!\n)/.test(text)) leftovers.push(ext.id);
+    if (
+      reason.includes('described below') &&
+      (!text || text === ext.desc?.trim() || text === ext.use?.trim())
+    ) {
+      missing.push(ext.id);
+    }
+  }
+  assert.deepEqual(leftovers, [], `markup or a source line wrap left in: ${leftovers}`);
+  assert.deepEqual(missing, [], `"described below" with nothing shown: ${missing}`);
 });
 
 // ── Null for extensions with instructions ────────────────────────────────────

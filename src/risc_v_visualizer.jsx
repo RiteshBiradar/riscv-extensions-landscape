@@ -4691,8 +4691,17 @@ const RISCVExplorer = () => {
                           </div>
                         )}
 
-                      {Object.keys(selectedExt.instructions || {}).length === 0 &&
-                        noInstructionReason(selectedExt) && (
+                      {(() => {
+                        // null when the extension has instructions: the
+                        // populated snapshot below renders instead.
+                        const reason = noInstructionReason(selectedExt);
+                        if (!reason) return null;
+                        const behavior = cleanBehaviorText(selectedExt.behavior);
+                        const showBehavior =
+                          behavior.length > 0 &&
+                          behavior !== selectedExt.desc?.trim() &&
+                          behavior !== selectedExt.use?.trim();
+                        return (
                           <div className="bg-slate-900 p-3 rounded-sm border border-slate-700">
                             <h3
                               className="text-[11px] uppercase tracking-wider font-bold mb-1.5 flex items-center gap-1"
@@ -4704,25 +4713,19 @@ const RISCVExplorer = () => {
                               className="text-sm leading-relaxed"
                               style={{ color: 'var(--riscv-text-2)' }}
                             >
-                              {noInstructionReason(selectedExt)}
+                              {reason}
                             </p>
-                            {(() => {
-                              const text = cleanBehaviorText(selectedExt.behavior);
-                              return (
-                                text.length > 0 &&
-                                text !== selectedExt.desc?.trim() &&
-                                text !== selectedExt.use?.trim() && (
-                                  <p
-                                    className="text-xs leading-relaxed mt-2 whitespace-pre-line"
-                                    style={{ color: 'var(--riscv-text-2)' }}
-                                  >
-                                    {text}
-                                  </p>
-                                )
-                              );
-                            })()}
+                            {showBehavior && (
+                              <p
+                                className="text-xs leading-relaxed mt-2 whitespace-pre-line"
+                                style={{ color: 'var(--riscv-text-2)' }}
+                              >
+                                {behavior}
+                              </p>
+                            )}
                           </div>
-                        )}
+                        );
+                      })()}
 
                       {Object.keys(selectedExt.instructions || {}).length > 0 && (
                         <div className="bg-slate-900 p-3 rounded-sm border border-slate-700">

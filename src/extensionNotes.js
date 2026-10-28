@@ -1,11 +1,16 @@
+import { stripInlineFormatting } from './instructionMetadata.js';
+
 /**
- * Strips AsciiDoc NOTE blocks from behavior text.
+ * Turns UDB's behavior text, which is AsciiDoc source, into plain prose.
  *
  * Returns an empty string for non-string or whitespace-only input.
- * Removes NOTE markers and their content while preserving surrounding text:
- * - Block-style notes (delimited by `====`) are removed entirely
- * - Inline-style notes are removed up to the next paragraph break
- * - Text after NOTE sections is preserved when present
+ * - NOTE admonitions are removed: block-style (delimited by `====`) entirely,
+ *   inline-style up to the next paragraph break.
+ * - Line breaks inside a paragraph are joined: UDB wraps its source at about
+ *   80 columns, and keeping those breaks splits sentences mid-line.
+ * - List items (`* x`, `** x`) start with a bullet, and inline formatting
+ *   (`code`, *strong*) is reduced to its text; a stray backtick is dropped.
+ * Paragraphs stay separated by a blank line.
  *
  * Pure — takes a string, returns a cleaned string.
  */
@@ -14,9 +19,22 @@ export function cleanBehaviorText(value) {
     return '';
   }
   return value
+    .replace(/\r/g, '')
     .replace(/\n?\[NOTE\]\n?={4,}\n[\s\S]*?={4,}/g, '')
     .replace(/\n?\[NOTE\]\n(?:(?!\n\n)[\s\S])*(\n\n|$)/g, '$1')
-    .trim();
+    .split(/\n\s*\n/)
+    .map((paragraph) =>
+      stripInlineFormatting(
+        paragraph
+          .trim()
+          .replace(/^\*+\s+/, '• ')
+          .replace(/\s+/g, ' '),
+      )
+        // An unmatched backtick is a typo upstream (Sstvala's `c.ebreak).
+        .replace(/`/g, ''),
+    )
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 /**
@@ -28,12 +46,10 @@ export function cleanBehaviorText(value) {
  *
  * The explanation is derived from fields the catalogue already carries —
  * `csrs`, `behavior`, and the extension id — so nothing new needs to be
- * maintained. Catalogue entries without instruction encodings mapped include:
- * umbrellas, VLEN parameters, behavioural guarantees, CSR-only extensions,
- * and draft or unmodeled sets (such as RV128I). Silence in the detail panel
- * reads as absent data; a short note clarifies that no instruction encodings
- * are currently available in this catalogue, noting known characteristics where
- * catalogue metadata provides them.
+ * maintained. Catalogue entries without instruction encodings include VLEN
+ * parameters, behavioural guarantees, CSR-only extensions, and draft or
+ * unmodeled sets (such as RV128I). Silence in the detail panel reads as absent
+ * data, so the note says which of these the extension is.
  *
  * Ratified extensions get definitive wording ("This extension adds no
  * instructions; …") because the spec is final and their instruction set is
