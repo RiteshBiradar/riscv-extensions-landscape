@@ -1,4 +1,25 @@
 /**
+ * Strips AsciiDoc NOTE blocks from behavior text.
+ *
+ * Returns an empty string for non-string or whitespace-only input.
+ * Removes NOTE markers and their content while preserving surrounding text:
+ * - Block-style notes (delimited by `====`) are removed entirely
+ * - Inline-style notes are removed up to the next paragraph break
+ * - Text after NOTE sections is preserved when present
+ *
+ * Pure — takes a string, returns a cleaned string.
+ */
+export function cleanBehaviorText(value) {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    return '';
+  }
+  return value
+    .replace(/\n?\[NOTE\]\n?={4,}\n[\s\S]*?={4,}/g, '')
+    .replace(/\n?\[NOTE\]\n(?:(?!\n\n)[\s\S])*(\n\n|$)/g, '$1')
+    .trim();
+}
+
+/**
  * Explains when an extension has no instruction encodings in the catalogue.
  *
  * Returns a short explanatory string when the extension's `instructions` map

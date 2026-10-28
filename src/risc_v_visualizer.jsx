@@ -55,7 +55,7 @@ import EncodingDiagram from './EncodingDiagram.jsx';
 import InstructionUsage from './InstructionUsage.jsx';
 import DetailSection from './DetailSection.jsx';
 import { specificationLink } from './specLink.js';
-import { noInstructionReason } from './extensionNotes.js';
+import { noInstructionReason, cleanBehaviorText } from './extensionNotes.js';
 import { ExtensionToolchains } from './ToolchainSupport.jsx';
 import CsrDetails, { CsrChipList } from './CsrDetails.jsx';
 import { focusableWithin, nextFocus } from './focusTrap.js';
@@ -4706,24 +4706,21 @@ const RISCVExplorer = () => {
                             >
                               {noInstructionReason(selectedExt)}
                             </p>
-                            {typeof selectedExt.behavior === 'string' &&
-                              selectedExt.behavior.trim().length > 0 &&
-                              selectedExt.behavior.trim() !== selectedExt.desc?.trim() &&
-                              selectedExt.behavior.trim() !== selectedExt.use?.trim() &&
-                              (() => {
-                                const text = selectedExt.behavior
-                                  .replace(/\n?\[NOTE\]\n?={4,}\n[\s\S]*?={4,}/g, '')
-                                  .replace(/\n?\[NOTE\]\n(?:(?!\n\n)[\s\S])*(\n\n|$)/g, '$1')
-                                  .trim();
-                                return text.length > 0 ? (
+                            {(() => {
+                              const text = cleanBehaviorText(selectedExt.behavior);
+                              return (
+                                text.length > 0 &&
+                                text !== selectedExt.desc?.trim() &&
+                                text !== selectedExt.use?.trim() && (
                                   <p
                                     className="text-xs leading-relaxed mt-2 whitespace-pre-line"
                                     style={{ color: 'var(--riscv-text-2)' }}
                                   >
                                     {text}
                                   </p>
-                                ) : null;
-                              })()}
+                                )
+                              );
+                            })()}
                           </div>
                         )}
 

@@ -12,11 +12,62 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { noInstructionReason } from '../src/extensionNotes.js';
+import { noInstructionReason, cleanBehaviorText } from '../src/extensionNotes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const catalog = JSON.parse(readFileSync(join(here, '..', 'src', 'riscv_extensions.json'), 'utf8'));
 const allExtensions = Object.values(catalog).flat().filter(Boolean);
+
+// ── cleanBehaviorText helper ─────────────────────────────────────────────────
+
+test('cleanBehaviorText returns empty string for non-string input', () => {
+  assert.equal(cleanBehaviorText(null), '');
+  assert.equal(cleanBehaviorText(undefined), '');
+  assert.equal(cleanBehaviorText(123), '');
+  assert.equal(cleanBehaviorText({}), '');
+  assert.equal(cleanBehaviorText([]), '');
+});
+
+test('cleanBehaviorText returns empty string for whitespace-only input', () => {
+  assert.equal(cleanBehaviorText(''), '');
+  assert.equal(cleanBehaviorText('   '), '');
+  assert.equal(cleanBehaviorText('\n\n'), '');
+  assert.equal(cleanBehaviorText('\t  \n  '), '');
+});
+
+test('cleanBehaviorText returns text unchanged when no NOTE marker is present', () => {
+  const text = 'This extension provides memory protection.';
+  assert.equal(cleanBehaviorText(text), text);
+});
+
+test('cleanBehaviorText removes block-style NOTE delimited by equal signs', () => {
+  const text = 'Main text here.\n[NOTE]\n====\nThis is a note.\nMore note content.\n====\nText after note.';
+  const expected = 'Main text here.\nText after note.';
+  assert.equal(cleanBehaviorText(text), expected);
+});
+
+test('cleanBehaviorText removes inline-style NOTE that runs to paragraph break', () => {
+  const text = 'Main text here.\n[NOTE]\nThis is a note.\nMore note content.\n\nText after note.';
+  const expected = 'Main text here.\n\nText after note.';
+  assert.equal(cleanBehaviorText(text), expected);
+});
+
+test('cleanBehaviorText removes text when it begins with NOTE', () => {
+  const text = '[NOTE]\n====\nOnly a note here.\n====';
+  assert.equal(cleanBehaviorText(text), '');
+});
+
+test('cleanBehaviorText removes NOTE content up to paragraph break, preserving text after', () => {
+  const text = 'Important behavior.\n[NOTE]\nFirst note content.\n\nMore text after note.';
+  // Inline NOTE is removed up to paragraph break; text after break is preserved
+  const expected = 'Important behavior.\n\nMore text after note.';
+  assert.equal(cleanBehaviorText(text), expected);
+});
+
+test('cleanBehaviorText trims whitespace from result', () => {
+  const text = '  \n  Main text.  \n[NOTE]\nNote content.\n\n  ';
+  assert.equal(cleanBehaviorText(text), 'Main text.');
+});
 
 // ── Null for extensions with instructions ────────────────────────────────────
 
